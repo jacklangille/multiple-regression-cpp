@@ -3,8 +3,67 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
 using namespace std;
+vector<vector<double> > MTRANSPOSE(const vector<vector<double> >& M);
+vector<vector<double> > MMULT(const vector<vector<double> >& A, const vector<vector<double> >& B);
+vector<vector<double> > MINVERSE(const vector<vector<double> >& M);
+vector<vector<double>> readData(const string& filename);
+vector<vector<double>> vectorToMatrix(const vector<double>& vec);
+vector<double> matrixToVector(const vector<vector<double> >& mat);
+void printMatrix(const vector<vector<double>>& matrix);
+int main() {
+    
+    vector<vector<double> > X; 
+    vector<double> Y_vector; 
+    vector<vector<double> > error; 
+    string fileName = "data.txt";
+    auto data = readData(fileName);
+
+    vector<string> predictors = {"Intercept", "Hour", "Traffic", "Wind"};
+    for(const auto& row : data){
+        X.push_back({1.0, row[0], row[2], row[3]});  
+        Y_vector.push_back(row[1]);
+    }
+    cout << "Data successfully loaded...\n";
+    cout << "Predictor matrix X:\n";
+    printMatrix(X);
+    auto Y = vectorToMatrix(Y_vector);
+    cout << "Target vector Y:\n";
+    printMatrix(Y);
+
+    size_t numberOfPredictors = X[0].size() - 1;
+    vector<double> coefficients(numberOfPredictors + 1, 1.0); 
+    cout << "Fitting model...\n";
+    auto XT = MTRANSPOSE(X);
+    auto XT_X = MMULT(XT, X);
+    auto XT_X_INV = MINVERSE(XT_X);
+    auto XT_Y = MMULT(XT, Y);
+    auto beta_hat_mat = MMULT(XT_X_INV, XT_Y);
+    auto beta_hat = matrixToVector(beta_hat_mat);
+    cout << "Fit Complete. Coefficients:\n";
+    for (size_t i = 0; i < beta_hat.size(); ++i) {
+        if(i == 0) cout << "Intercept: " << beta_hat[i] << endl;
+        else cout << "Beta " << i << ": " << beta_hat[i] << endl;
+    }
+    return 0;
+}
+
+vector<double> matrixToVector(const vector<vector<double> >& matrix){
+    vector<double> vector;
+    if(matrix.empty()) return vector;
+
+    if (matrix.size() == 1) { // Single row
+        for (double num : matrix[0]) {
+            vector.push_back(num);
+        }
+    } else if (matrix[0].size() == 1) { // Single column
+        for (const auto& row : matrix) {
+            vector.push_back(row[0]);
+        }
+    } 
+
+    return vector;
+}
 
 vector<vector<double> > MTRANSPOSE(const vector<vector<double> >& M){
     vector<vector<double> > transposed(M[0].size(), vector<double>(M.size()));
@@ -93,48 +152,13 @@ vector<vector<double>> vectorToMatrix(const vector<double>& vec) {
     return mat;
 }
 
-template<typename T>
-void printMatrix(const vector<vector<T>>& matrix) {
+void printMatrix(const vector<vector<double>>& matrix) {
     for (const auto& row : matrix) {
-        for (T elem : row) {
+        for (double elem : row) {
             cout << elem << " ";
         }
         cout << endl;
     }
 }
 
-
-
-int main() {
-    
-    vector<vector<double> > X; 
-    vector<double> Y_vector; 
-    vector<vector<double> > error; 
-    string fileName = "data.txt";
-    auto data = readData(fileName);
-    
-    for(const auto& row : data){
-        X.push_back({row[0], row[2], row[3]});
-        Y_vector.push_back(row[1]);
-    }
-    cout << "Data successfully loaded...\n";
-    cout << "Predictor matrix X:\n";
-    printMatrix(X);
-    auto Y = vectorToMatrix(Y_vector);
-    cout << "Target vector Y:\n";
-    printMatrix(Y);
-
-    size_t numberOfPredictors = X[0].size();
-    vector<double> coefficients(numberOfPredictors + 1, 1.0); 
-    cout << "Fitting model...\n";
-    auto XT = MTRANSPOSE(X);
-    auto XT_X = MMULT(XT, X);
-    auto XT_X_INV = MINVERSE(XT_X);
-    auto XT_Y = MMULT(XT, Y);
-    auto beta_hat = MMULT(XT_X_INV, XT_Y);
-    
-    printMatrix(beta_hat);
-
-    return 0;
-}
 
